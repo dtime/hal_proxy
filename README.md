@@ -1,7 +1,12 @@
-Dtime Developers
+Dtime API Proxy
 ================
 
-The new home for the dtime api. When you try to hit the api
-in the browser it will redirect here - documentation, tools
-to help create new apps, generate tokens, etc will be provided.
+Experiments with proxying all requests through another app...
+
+(why?)
+
+* put analytics here
+* rate limiting logic: https://github.com/postrank-labs/goliath/blob/master/examples/auth_and_rate_limit.rb
+* embed at this level - composing smaller already cached components, rather
+  than fresh renders
 
