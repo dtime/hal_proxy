@@ -4,6 +4,8 @@ source :rubygems
 # gem 'mongo'
 gem 'goliath'
 gem 'yajl-ruby'
+gem 'rack-cache'
+gem 'dalli'
 # gem 'em-mongo'
 
 gem 'em-synchrony', :git => 'http://github.com/therabidbanana/em-synchrony.git'

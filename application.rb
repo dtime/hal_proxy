@@ -4,19 +4,28 @@ require 'goliath'
 # require 'em-mongo'
 require 'em-http'
 require 'yajl'
+require 'rack-cache'
+require 'dalli'
 require 'em-synchrony/em-http'
 require 'em-synchrony/fiber_iterator'
 require './proxy_interactions'
 
+
 class App < Goliath::API
+
   use Goliath::Rack::Params
+  use Rack::Cache,
+    :private_headers => ['X-Content-Digest'],
+    :metastore => Dalli::Client.new,
+    :entitystore => "file:tmp/body",
+    :allow_revalidate => true
   include ProxyInteractions
 
 
   def on_headers(env, headers)
     host = (ENV['PROXY_TARGET'] || 'http://localhost:9292').gsub(/^https?:\/\//, '')
     env['client-headers'] = headers.merge("Host" => host)
-    env.logger.info 'proxying new request: ' + headers.inspect
+    p 'proxying new request: ' + headers.inspect
   end
 
   def response(env)
