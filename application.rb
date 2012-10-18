@@ -14,7 +14,7 @@ class App < Goliath::API
 
 
   def on_headers(env, headers)
-    host = (ENV['PROXY_TO'] || 'http://localhost:9292').gsub(/^https?:\/\//, '')
+    host = (ENV['PROXY_TARGET'] || 'http://localhost:9292').gsub(/^https?:\/\//, '')
     env['client-headers'] = headers.merge("Host" => host)
     env.logger.info 'proxying new request: ' + headers.inspect
   end
@@ -24,7 +24,7 @@ class App < Goliath::API
 
     params = build_params(env)
 
-    host = ENV['PROXY_TO'] || 'http://localhost:9292'
+    host = ENV['PROXY_TARGET'] || 'http://localhost:9292'
     url = "#{host}#{env[Goliath::Request::REQUEST_PATH]}"
     resp = trigger_request(url, params)
     process_time = Time.now.to_f - start_time

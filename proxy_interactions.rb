@@ -57,7 +57,8 @@ module ProxyInteractions
     #
 
     if content_type == :json
-      _response = rewrite_response(resp.response)
+      response_string = resp.response
+      _response = rewrite_response(response_string)
       _response = Yajl::Parser.new.parse(_response)
       _response = prefetch_with(_response, opts) if resp.response_header.status == 200
 
@@ -95,7 +96,8 @@ module ProxyInteractions
     EM::Synchrony::FiberIterator.new(prefetching, concurrency).each do |(rel, url)|
       puts ["Prefetching #{rel} => #{url}"]
       resp = EventMachine::HttpRequest.new(url).get
-      _response = rewrite_response(resp.response)
+      response_string = resp.response
+      _response = rewrite_response(response_string)
       resp_remapped = Yajl::Parser.new.parse(_response)
       if prefetch_results[rel] && prefetch_results[rel].is_a?(Array)
         prefetch_results[rel] << resp_remapped
@@ -124,7 +126,9 @@ module ProxyInteractions
   end
 
   def rewrite_response(string)
-    string.gsub(ENV['PROXY_TO'], ENV['PROXY_URL']
+    proxy_to = ENV['PROXY_TARGET'] || 'http://localhost:9292'
+    proxy_from = ENV['PROXY_URL'] || 'http://localhost:9293'
+    string.gsub(proxy_to, proxy_from)
   end
 
   def remap_response(hash)

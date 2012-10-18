@@ -12,7 +12,7 @@ This is based on an original concept seen in: http://vimeo.com/49609648
 All other requests will pass through to the original app you point this proxy to, rewriting all urls in the response to hit the proxy.
 
 
-set ENV['PROXY\_TO'] && ENV['PROXY\_URL']
+set ENV['PROXY\_TARGET'] && ENV['PROXY\_URL']
 
 
 
