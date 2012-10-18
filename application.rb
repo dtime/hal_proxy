@@ -5,13 +5,36 @@ require 'goliath'
 require 'em-http'
 require 'yajl'
 require 'em-synchrony/em-http'
+module EventMachine
+  module HTTPMethods
+     %w[options patch].each do |type|
+       class_eval %[
+         alias :a#{type} :#{type}
+         def #{type}(options = {}, &blk)
+           f = Fiber.current
+
+           conn = setup_request(:#{type}, options, &blk)
+           if conn.error.nil?
+             conn.callback { f.resume(conn) }
+             conn.errback  { f.resume(conn) }
+
+             Fiber.yield
+           else
+             conn
+           end
+         end
+      ]
+    end
+  end
+end
 
 class App < Goliath::API
   use Goliath::Rack::Params
 
 
   def on_headers(env, headers)
-    env['client-headers'] = headers.merge("Host" => 'localhost:9292')
+    host = (ENV['PROXY_TO'] || 'http://localhost:9292').gsub(/^https?:\/\//, '')
+    env['client-headers'] = headers.merge("Host" => host)
     env.logger.info 'proxying new request: ' + headers.inspect
   end
 
@@ -20,14 +43,28 @@ class App < Goliath::API
 
     headers = env['client-headers'] #.merge("Host" => 'dev-api.dtime.com')
     params = {:head => headers, :query => env.params}
-    puts [ headers, env.params, env[Goliath::Request::REQUEST_PATH]  ].inspect
-    req = EM::HttpRequest.new("http://localhost:9292#{env[Goliath::Request::REQUEST_PATH]}")
+    host = ENV['PROXY_TO'] || 'http://localhost:9292'
+    req = EM::HttpRequest.new("#{host}#{env[Goliath::Request::REQUEST_PATH]}")
+
+    # Strip/add body
+    case(env[Goliath::Request::REQUEST_METHOD])
+      when 'GET', 'OPTIONS', 'HEAD'
+        params[:head].delete("Content-Length")
+        params.delete(:body)
+      when 'POST', 'PUT', 'DELETE'
+        params.merge!(:body => env[Goliath::Request::RACK_INPUT].read)
+      else p "UNKNOWN METHOD #{env[Goliath::Request::REQUEST_METHOD]}"
+    end
+
+    puts [ env[Goliath::Request::REQUEST_METHOD], env[Goliath::Request::REQUEST_PATH], headers, env.params, params[:body]  ].inspect
+
     resp = case(env[Goliath::Request::REQUEST_METHOD])
-      when 'GET'  then req.get(params[:head].merge("Content-Length" => nil))
-      when 'POST' then req.post(params.merge(:body => env[Goliath::Request::RACK_INPUT].read))
-      when 'PUT'  then req.put(params.merge(:body => env[Goliath::Request::RACK_INPUT].read))
+      when 'GET' then req.get(params)
+      when 'POST' then req.post(params)
+      when 'PUT'  then req.put(params)
       when 'HEAD' then req.head(params)
       when 'OPTIONS' then req.options(params)
+      when 'PATCH' then req.patch(params)
       when 'DELETE' then req.delete(params)
       else p "UNKNOWN METHOD #{env[Goliath::Request::REQUEST_METHOD]}"
     end
@@ -60,7 +97,8 @@ class App < Goliath::API
       end
     end
     if hash.respond_to?(:has_key?) && hash.has_key?("href") && hash.has_key?("uri")
-      hash["href"] = "http://localhost:9293#{hash["uri"]}"
+      proxy_host = ENV['PROXY_URL'] || 'http://localhost:9293'
+      hash["href"] = "#{proxy_host}#{hash["uri"]}"
     elsif hash.respond_to?(:has_key?)
       hash.each do |k,v|
         hash[k] = remap_response(v)
