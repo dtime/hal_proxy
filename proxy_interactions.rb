@@ -90,7 +90,7 @@ module ProxyInteractions
       end
     end
 
-    concurrency = 2
+    concurrency = 4
     prefetch_results = {}
 
     start_time = Time.now.to_f
