@@ -90,7 +90,7 @@ module ProxyInteractions
       end
     end
 
-    concurrency = ENV["FIBERS"] || 2
+    concurrency = ENV["FIBERS"].to_i || 2
     prefetch_results = {}
 
     start_time = Time.now.to_f
