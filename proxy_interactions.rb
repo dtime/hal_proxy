@@ -64,7 +64,8 @@ module ProxyInteractions
 
       _response = Yajl::Encoder.new.encode(_response)
     else
-      _response = resp.response
+      response_string = resp.response
+      _response = rewrite_response(response_string)
     end
 
     [resp.response_header.status, response_headers, _response]
