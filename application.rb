@@ -27,8 +27,10 @@ class App < Goliath::API
     host = ENV['PROXY_TARGET'] || 'http://localhost:9292'
     url = "#{host}#{env[Goliath::Request::REQUEST_PATH]}"
     resp = trigger_request(url, params)
+    final = build_response(resp, params)
     process_time = Time.now.to_f - start_time
-    build_response(resp, params)
+    puts "Total time: #{process_time}"
+    final
   end
 
 
