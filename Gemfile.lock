@@ -1,5 +1,5 @@
 GIT
-  remote: git@github.com:therabidbanana/em-synchrony.git
+  remote: http://github.com/therabidbanana/em-synchrony.git
   revision: fe1a05aac515a9f1c820fff4b4f99c4c969ac15a
   specs:
     em-synchrony (1.0.2)
