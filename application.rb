@@ -33,32 +33,32 @@ class App < Goliath::API
 
 
   # Write the request information into mongo
-  def record(process_time, resp, client_headers, response_headers)
-    e = env
-    e.trace('http_log_record')
-    EM.next_tick do
-      doc = {
-        request: {
-          http_method: e[Goliath::Request::REQUEST_METHOD],
-          path: e[Goliath::Request::REQUEST_PATH],
-          headers: client_headers,
-          params: e.params
-        },
-        response: {
-          status: resp.response_header.status,
-          length: resp.response.length,
-          headers: response_headers,
-          body: resp.response
-        },
-        process_time: process_time,
-        date: Time.now.to_i
-      }
+  # def record(process_time, resp, client_headers, response_headers)
+    # e = env
+    # e.trace('http_log_record')
+    # EM.next_tick do
+      # doc = {
+        # request: {
+          # http_method: e[Goliath::Request::REQUEST_METHOD],
+          # path: e[Goliath::Request::REQUEST_PATH],
+          # headers: client_headers,
+          # params: e.params
+        # },
+        # response: {
+          # status: resp.response_header.status,
+          # length: resp.response.length,
+          # headers: response_headers,
+          # body: resp.response
+        # },
+        # process_time: process_time,
+        # date: Time.now.to_i
+      # }
 
-      if e[Goliath::Request::RACK_INPUT]
-        doc[:request][:body] = e[Goliath::Request::RACK_INPUT].read
-      end
+      # if e[Goliath::Request::RACK_INPUT]
+        # doc[:request][:body] = e[Goliath::Request::RACK_INPUT].read
+      # end
 
-      e.mongo.insert(doc)
-    end
-  end
+      # e.mongo.insert(doc)
+    # end
+  # end
 end
