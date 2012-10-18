@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:therabidbanana/em-synchrony.git
+  revision: fe1a05aac515a9f1c820fff4b4f99c4c969ac15a
+  specs:
+    em-synchrony (1.0.2)
+      eventmachine (>= 1.0.0.beta.1)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -14,8 +21,6 @@ GEM
       http_parser.rb (>= 0.5.3)
     em-socksify (0.2.1)
       eventmachine (>= 1.0.0.beta.4)
-    em-synchrony (1.0.2)
-      eventmachine (>= 1.0.0.beta.1)
     em-websocket (0.3.8)
       addressable (>= 2.1.1)
       eventmachine (>= 0.12.9)
@@ -58,7 +63,7 @@ PLATFORMS
 
 DEPENDENCIES
   em-http-request
-  em-synchrony
+  em-synchrony!
   fivemat
   goliath
   rack-test

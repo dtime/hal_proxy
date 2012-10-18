@@ -5,31 +5,12 @@ require 'goliath'
 require 'em-http'
 require 'yajl'
 require 'em-synchrony/em-http'
-module EventMachine
-  module HTTPMethods
-     %w[options patch].each do |type|
-       class_eval %[
-         alias :a#{type} :#{type}
-         def #{type}(options = {}, &blk)
-           f = Fiber.current
-
-           conn = setup_request(:#{type}, options, &blk)
-           if conn.error.nil?
-             conn.callback { f.resume(conn) }
-             conn.errback  { f.resume(conn) }
-
-             Fiber.yield
-           else
-             conn
-           end
-         end
-      ]
-    end
-  end
-end
+require 'em-synchrony/fiber_iterator'
+require './proxy_interactions'
 
 class App < Goliath::API
   use Goliath::Rack::Params
+  include ProxyInteractions
 
 
   def on_headers(env, headers)
@@ -41,77 +22,15 @@ class App < Goliath::API
   def response(env)
     start_time = Time.now.to_f
 
-    headers = env['client-headers'] #.merge("Host" => 'dev-api.dtime.com')
-    params = {:head => headers, :query => env.params}
+    params = build_params(env)
+
     host = ENV['PROXY_TO'] || 'http://localhost:9292'
-    req = EM::HttpRequest.new("#{host}#{env[Goliath::Request::REQUEST_PATH]}")
-
-    # Strip/add body
-    case(env[Goliath::Request::REQUEST_METHOD])
-      when 'GET', 'OPTIONS', 'HEAD'
-        params[:head].delete("Content-Length")
-        params.delete(:body)
-      when 'POST', 'PUT', 'DELETE'
-        params.merge!(:body => env[Goliath::Request::RACK_INPUT].read)
-      else p "UNKNOWN METHOD #{env[Goliath::Request::REQUEST_METHOD]}"
-    end
-
-    puts [ env[Goliath::Request::REQUEST_METHOD], env[Goliath::Request::REQUEST_PATH], headers, env.params, params[:body]  ].inspect
-
-    resp = case(env[Goliath::Request::REQUEST_METHOD])
-      when 'GET' then req.get(params)
-      when 'POST' then req.post(params)
-      when 'PUT'  then req.put(params)
-      when 'HEAD' then req.head(params)
-      when 'OPTIONS' then req.options(params)
-      when 'PATCH' then req.patch(params)
-      when 'DELETE' then req.delete(params)
-      else p "UNKNOWN METHOD #{env[Goliath::Request::REQUEST_METHOD]}"
-    end
-
+    url = "#{host}#{env[Goliath::Request::REQUEST_PATH]}"
+    resp = trigger_request(url, params)
     process_time = Time.now.to_f - start_time
-
-    response_headers = {}
-    resp.response_header.each_pair do |k, v|
-      # Skip internal negotiation headers
-      next if k == "CONNECTION"
-      next if k == "TRANSFER_ENCODING"
-      next if k == "CONTENT_LENGTH"
-      response_headers[to_http_header(k)] = v
-    end
-
-    # record(process_time, resp, env['client-headers'], response_headers)
-    #
-    #
-    #
-    _response = Yajl::Parser.new.parse(resp.response)
-    _response = remap_response(_response)
-
-    [resp.response_header.status, response_headers, Yajl::Encoder.new.encode(_response)]
+    build_response(resp, params)
   end
 
-  def remap_response(hash)
-    if hash.is_a?(Array)
-      hash = hash.map do |h|
-        remap_response(h)
-      end
-    end
-    if hash.respond_to?(:has_key?) && hash.has_key?("href") && hash.has_key?("uri")
-      proxy_host = ENV['PROXY_URL'] || 'http://localhost:9293'
-      hash["href"] = "#{proxy_host}#{hash["uri"]}"
-    elsif hash.respond_to?(:has_key?)
-      hash.each do |k,v|
-        hash[k] = remap_response(v)
-      end
-    end
-    hash
-  end
-
-  # Need to convert from the CONTENT_TYPE we'll get back from the server
-  # to the normal Content-Type header
-  def to_http_header(k)
-    k.downcase.split('_').collect { |e| e.capitalize }.join('-')
-  end
 
   # Write the request information into mongo
   def record(process_time, resp, client_headers, response_headers)
