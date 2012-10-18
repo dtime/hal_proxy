@@ -13,7 +13,6 @@ module ProxyInteractions
         params.merge!(:body => env[Goliath::Request::RACK_INPUT].read)
       else p "UNKNOWN METHOD #{env[Goliath::Request::REQUEST_METHOD]}"
     end
-    puts [ env[Goliath::Request::REQUEST_METHOD], env[Goliath::Request::REQUEST_PATH], headers, env.params ].inspect
     params
   end
 
@@ -115,7 +114,6 @@ module ProxyInteractions
     end
 
     process_time = Time.now.to_f - start_time
-    puts "Built embedded results in #{process_time}"
 
     response
   end

@@ -29,7 +29,6 @@ class App < Goliath::API
     resp = trigger_request(url, params)
     final = build_response(resp, params)
     process_time = Time.now.to_f - start_time
-    puts "#{env[Goliath::Request::REQUEST_PATH]}: Total time: #{url} #{process_time}"
 
     final
   end
